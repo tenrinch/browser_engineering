@@ -1,23 +1,41 @@
 import socket
 import sys
+import ssl
 
 def request(url):
 
-    # make sure the url start with a http request
-    assert url.startswith('http://')
-    url = url[len('http://'):]
+    # make sure the url start with a http or https request
+    # assert url.startswith('http://', 'https://')
+    # url = url[len('http://'):]
+    scheme, url = url.split('://', 1)
+    assert scheme in ['http', 'https'], 'Unknown Schemc {}'.format(scheme)
 
-    # splitting the host and path form the url
+    
+
+    # splitting the host, path and port form the url
     host, path = url.split('/', 1)
     path = '/' + path #adding the / back to the path
+    port = 80 if scheme=='http' else 443
+    # if custom port are mentioned in the url, split it form the host name 
+    if ':' in host:
+        host, port = host.splist(':', 1)
+        port = int(port)
 
     s = socket.socket(
         family=socket.AF_INET,
         type=socket.SOCK_STREAM,
         proto=socket.IPPROTO_TCP
     )
-    s.connect((host, 80))
+    """
+    Python ssl library implements all of these details for us, so making an encrypted connection is almost as easy as making a regular connection.
+    When you wrap s, you pass a server_hostname argument, and it should match the argument you passed to s.connect. Note that I save the new socket back into the s variable. That’s because you don’t want to send over the original socket; it would be unencrypted and also confusing.
+    """
+    if scheme == 'https':
+        ctx = ssl.create_default_context()
+        s = ctx. wrap_socket(s, server_hostname=host)
+    s.connect((host, port))
 
+    # send request message to the server in proper http format.
     s.send('GET {} HTTP/1.0\r\n'.format(path).encode('utf-8') + 
         'HOST {}\r\n\r\n'.format(host).encode('utf-8'))
 
