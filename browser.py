@@ -1,6 +1,7 @@
 import socket
 import sys
 import ssl
+import requests
 
 def request(url):
 
@@ -36,8 +37,11 @@ def request(url):
     s.connect((host, port))
 
     # send request message to the server in proper http format.
-    s.send('GET {} HTTP/1.0\r\n'.format(path).encode('utf-8') + 
-        'HOST {}\r\n\r\n'.format(host).encode('utf-8'))
+    connectionType = 'close'
+    uaHttpbin = requests.get('http://httpbin.org/user-agent') # make a request to httpbin to get the user agent
+    userAgent = uaHttpbin.json()['user-agent'] # convert the response to json and extract the user-agent
+    request = 'GET {} HTTP/1.0\r\n'.format(path) + 'Host {}\r\n'.format(host) + 'Connection {}\r\n'.format(connectionType) + 'User-Agent {}\r\n\r\n'.format(userAgent)
+    s.send(request.encode('utf-8'))
 
     # Reading the response using makefile helper function which hides the loop for response reading, 
     # makefile returns a file like object containing every byte received from the server 
